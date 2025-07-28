@@ -2,8 +2,12 @@ package com.lucas_costa.course.services;
 
 import com.lucas_costa.course.entities.User;
 import com.lucas_costa.course.repositories.UserRepository;
+import com.lucas_costa.course.services.exceptions.DatabaseException;
 import com.lucas_costa.course.services.exceptions.ResourceNotFoundException;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -29,13 +33,23 @@ public class UserService {
     }
 
     public void delete(Long id){
-        repository.deleteById(id);
+        try{
+            repository.deleteById(id);
+        }catch (EmptyResultDataAccessException e){
+            throw new ResourceNotFoundException(id);
+        }catch (DataIntegrityViolationException e){
+            throw new DatabaseException(e.getMessage());
+        }
     }
 
     public User update(Long id, User obj){
-        User entity = repository.getReferenceById(id);
-        updateData(entity, obj);
-        return repository.save(entity);
+        try {
+            User entity = repository.getReferenceById(id);
+            updateData(entity, obj);
+            return repository.save(entity);
+        }catch (EntityNotFoundException e){
+            throw new ResourceNotFoundException(id);
+        }
     }
 
     public void updateData(User entity, User obj){
